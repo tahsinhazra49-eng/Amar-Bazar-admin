@@ -128,7 +128,9 @@
             <section id="ordersSection" class="hidden-modal space-y-4">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border flex justify-between items-center">
                     <h2 class="text-lg font-bold text-gray-800"><i class="fas fa-shopping-bag mr-1"></i> কাস্টমার অর্ডার লিস্ট</h2>
-                    <button onclick="loadAdminOrders()" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold border hover:bg-blue-100"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
+                    <button id="refreshOrdersBtn" onclick="loadAdminOrders()" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold border hover:bg-blue-100 transition duration-200">
+                        <i id="refreshIcon" class="fas fa-sync-alt mr-1"></i> <span id="refreshBtnText">রিফ্রেশ</span>
+                    </button>
                 </div>
                 <div class="bg-white p-5 rounded-2xl shadow-sm border overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[750px]">
@@ -191,7 +193,7 @@
     <!-- Firebase SDK Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -208,11 +210,24 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // BACK BUTTON PROTECTION
+        function setupBackButtonProtection() {
+            history.pushState(null, null, location.href);
+            window.onpopstate = function () {
+                if (confirm("আপনি কি এডমিন প্যানেল থেকে বের হতে চান?")) {
+                    history.back();
+                } else {
+                    history.pushState(null, null, location.href);
+                }
+            };
+        }
+
         // AUTHENTICATION CHECK
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById("loginSection").classList.add("hidden-modal");
                 document.getElementById("adminDashboard").classList.remove("hidden-modal");
+                setupBackButtonProtection();
                 loadAdminProducts();
             } else {
                 document.getElementById("loginSection").classList.remove("hidden-modal");
@@ -220,7 +235,7 @@
             }
         });
 
-        // LOGIN FORM SUBMIT
+        // LOGIN FORM SUBMIT WITH HIGH SECURITY SESSION PERSISTENCE
         document.getElementById("loginForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             const email = document.getElementById("adminEmail").value;
@@ -233,6 +248,7 @@
             btn.disabled = true;
 
             try {
+                await setPersistence(auth, browserSessionPersistence);
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
                 errorEl.innerText = "ভুল ইমেইল অথবা পাসওয়ার্ড দেওয়া হয়েছে!";
@@ -267,8 +283,8 @@
             });
             document.getElementById(`${tab}Section`).classList.remove('hidden-modal');
             document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}Btn`).className = "px-5 py-2.5 rounded-xl font-bold bg-blue-600 text-white shadow-sm transition";
-            if(tab === 'orders') loadAdminOrders();
-            if(tab === 'banner') loadBannerAdmin();
+            if(tab === 'orders') window.loadAdminOrders();
+            if(tab === 'banner') window.loadBannerAdmin();
         };
 
         window.checkFoodCategory = () => {
@@ -411,8 +427,19 @@
             }
         };
 
-        // --- ORDERS LOGIC ---
-        async function loadAdminOrders() {
+        // --- ORDERS LOGIC WITH REFRESH ANIMATION ---
+        window.loadAdminOrders = async () => {
+            const refreshBtn = document.getElementById("refreshOrdersBtn");
+            const refreshIcon = document.getElementById("refreshIcon");
+            const refreshText = document.getElementById("refreshBtnText");
+
+            // রিফ্রেশ এনিমেশন চালু করা
+            if (refreshIcon && refreshText && refreshBtn) {
+                refreshIcon.classList.add("fa-spin");
+                refreshText.innerText = "রিফ্রেশ হচ্ছে...";
+                refreshBtn.disabled = true;
+            }
+
             try {
                 const snap = await getDocs(collection(db, "orders"));
                 const tbody = document.getElementById("adminOrdersTable");
@@ -468,15 +495,26 @@
                         </tr>
                     `;
                 });
-            } catch (e) { console.error(e); }
-        }
+            } catch (e) { 
+                console.error(e); 
+            } finally {
+                // রিফ্রেশ শেষ হলে এনিমেশন বন্ধ করে আগের অবস্থায় ফেরত আনা
+                if (refreshIcon && refreshText && refreshBtn) {
+                    setTimeout(() => {
+                        refreshIcon.classList.remove("fa-spin");
+                        refreshText.innerText = "রিফ্রেশ";
+                        refreshBtn.disabled = false;
+                    }, 400); // 400ms স্মুথ ফিল দেওয়ার জন্য
+                }
+            }
+        };
 
         window.toggleOrderStatus = async (id, currentStatus) => {
             const newStatus = (currentStatus === "Pending") ? "Delivered" : "Pending";
             try {
                 await updateDoc(doc(db, "orders", id), { status: newStatus });
                 showToast(`স্ট্যাটাস পরিবর্তন করে '${newStatus}' করা হয়েছে!`);
-                loadAdminOrders();
+                window.loadAdminOrders();
             } catch(err) {
                 showToast("স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে!");
             }
@@ -486,12 +524,12 @@
             if(confirm("আপনি কি নিশ্চিতভাবে এই অর্ডারটি ডিলিট করতে চান?")) {
                 await deleteDoc(doc(db, "orders", id));
                 showToast("অর্ডার ডিলিট করা হয়েছে");
-                loadAdminOrders();
+                window.loadAdminOrders();
             }
         };
 
         // --- BANNER & OFFER LOGIC ---
-        async function loadBannerAdmin() {
+        window.loadBannerAdmin = async () => {
             try {
                 const snap = await getDocs(collection(db, "offers"));
                 const bannerBox = document.getElementById("currentBannerBox");
@@ -508,7 +546,7 @@
                     document.getElementById("bannerForm").reset();
                 }
             } catch (e) {}
-        }
+        };
 
         document.getElementById("bannerForm").addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -522,7 +560,7 @@
                     await addDoc(collection(db, "offers"), { text, imageUrl });
                 }
                 showToast("ব্যানার সফলভাবে সেভ হয়েছে!");
-                loadBannerAdmin();
+                window.loadBannerAdmin();
             } catch (e) {
                 showToast("ব্যানার সেভ করতে সমস্যা হয়েছে!");
             }
