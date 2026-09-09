@@ -12,16 +12,75 @@
         .hidden-modal { display: none !important; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* 3D Animations */
+        @keyframes float3d {
+            0%, 100% { transform: translateY(0px) rotateX(0deg) rotateY(0deg); }
+            50% { transform: translateY(-10px) rotateX(4deg) rotateY(-4deg); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.08); }
+        }
+        .login-card-3d {
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            animation: float3d 6s ease-in-out infinite;
+        }
+        .icon-3d {
+            animation: float3d 4s ease-in-out infinite;
+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4);
+        }
+        .glow-bg-1 {
+            animation: pulseGlow 5s ease-in-out infinite;
+        }
+        .glow-bg-2 {
+            animation: pulseGlow 7s ease-in-out infinite 1s;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans pb-24">
+
+    <!-- 3D Animated Glassmorphism Admin Login Screen -->
+    <div id="loginSection" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-hidden">
+        
+        <!-- 3D Background Glowing Spheres -->
+        <div class="absolute w-72 h-72 bg-blue-600/40 rounded-full blur-3xl -top-10 -left-10 glow-bg-1 pointer-events-none"></div>
+        <div class="absolute w-80 h-80 bg-indigo-600/40 rounded-full blur-3xl -bottom-10 -right-10 glow-bg-2 pointer-events-none"></div>
+
+        <!-- Login Card -->
+        <div class="relative bg-white/90 backdrop-blur-xl border border-white/40 p-8 rounded-3xl shadow-2xl max-w-sm w-full space-y-6 text-center login-card-3d transition-all duration-300">
+            
+            <!-- 3D Floating Icon -->
+            <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto text-3xl font-bold icon-3d transform -rotate-3 border border-white/30">
+                <i class="fas fa-user-shield"></i>
+            </div>
+
+            <h2 class="text-2xl font-black text-gray-800 tracking-wide">এডমিন লগইন</h2>
+
+            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <input type="email" id="adminEmail" placeholder="Enter your email" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all shadow-inner bg-white/80">
+                </div>
+                <div>
+                    <input type="password" id="adminPassword" placeholder="Enter your password" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all shadow-inner bg-white/80">
+                </div>
+                <button type="submit" id="loginBtn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-blue-500/40 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                    লগইন করুন
+                </button>
+            </form>
+            
+            <p id="loginError" class="text-xs text-red-500 hidden font-bold">ভুল ইমেইল বা পাসওয়ার্ড! আবার চেষ্টা করুন।</p>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="bg-blue-600 text-white shadow-md sticky top-0 z-30">
         <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
             <h1 class="text-xl font-extrabold flex items-center gap-2">
                 <i class="fas fa-user-shield"></i> এডমিন প্যানেল
             </h1>
-            <button type="button" onclick="logoutAdmin()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-red-600">
+            <button type="button" onclick="logoutAdmin()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-red-600 cursor-pointer transition">
                 <i class="fas fa-sign-out-alt"></i> লগআউট
             </button>
         </div>
@@ -60,11 +119,11 @@
                     <div id="foodPricesDiv" class="hidden md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-3 bg-blue-50 p-3 rounded-xl border border-blue-200">
                         <div>
                             <label class="block text-xs font-bold text-blue-700 mb-1">ফুলের প্রাইস (Full ৳ - ঐচ্ছিক)</label>
-                            <input type="number" id="pPriceFull" placeholder="প্রয়োজন না হলে ফাঁকা রাখুন" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+                            <input type="number" id="pPriceFull" placeholder="প্রয়োজন না হলে ফাঁকা রাখুন" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-blue-700 mb-1">হাফের প্রাইস (Half ৳ - ঐচ্ছিক)</label>
-                            <input type="number" id="pPriceHalf" placeholder="প্রয়োজন না হলে ফাঁকা রাখুন" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+                            <input type="number" id="pPriceHalf" placeholder="প্রয়োজন না হলে ফাঁকা রাখুন" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-blue-700 mb-1">পিসের প্রাইস (Piece ৳ - ঐচ্ছিক)</label>
@@ -75,8 +134,8 @@
                     <input type="number" id="pOldPrice" placeholder="পুরোনো মূল্য (যদি ডিসকাউন্ট হয়)" class="border rounded-xl px-4 py-2.5 text-sm focus:border-blue-500">
                     
                     <div class="md:col-span-2 space-y-1">
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide">প্রোডাক্ট কোয়ালিটি বক্স (Quality Box)</label>
-                        <input type="text" id="pQuality" placeholder="প্রোডাক্টের মান (যেমন: ১০০% প্রিমিয়াম সুতি) *" class="w-full border rounded-xl px-4 py-2.5 text-sm focus:border-blue-500" required>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide">প্রোডাক্ট কোয়ালিটি বক্স (Quality Box)</label>
+                        <input type="text" id="pQuality" placeholder="প্রোডাক্টের মান (যেমন: ১০০% প্রিমিয়াম সুতি) *" class="w-full border rounded-xl px-4 py-2.5 text-sm focus:border-blue-500" required>
                     </div>
 
                     <div class="md:col-span-2 space-y-1">
@@ -115,6 +174,7 @@
                     <i class="fas fa-sync-alt"></i> রিফ্রেশ
                 </button>
             </div>
+
             <div class="bg-white p-5 rounded-2xl shadow-sm border overflow-x-auto">
                 <table class="w-full text-left border-collapse min-w-[750px]">
                     <thead>
@@ -176,6 +236,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyATb9iSNj0IKGiyNJvAIRZf2qwdeL6AvMw",
@@ -189,6 +250,56 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- FIREBASE AUTHENTICATION LOGIC ---
+        
+        onAuthStateChanged(auth, (user) => {
+            const loginSec = document.getElementById("loginSection");
+            if (user) {
+                loginSec.classList.add("hidden-modal");
+                loadAdminProducts();
+            } else {
+                loginSec.classList.remove("hidden-modal");
+            }
+        });
+
+        window.handleAdminLogin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("adminEmail").value;
+            const pass = document.getElementById("adminPassword").value;
+            const loginBtn = document.getElementById("loginBtn");
+            const loginError = document.getElementById("loginError");
+
+            try {
+                loginBtn.innerText = "লগইন হচ্ছে...";
+                loginBtn.disabled = true;
+
+                await signInWithEmailAndPassword(auth, email, pass);
+                
+                loginError.classList.add("hidden");
+                document.getElementById("adminEmail").value = "";
+                document.getElementById("adminPassword").value = "";
+                showToast("সফলভাবে লগইন হয়েছে!");
+            } catch (error) {
+                console.error("Login Error:", error);
+                loginError.innerText = "ভুল ইমেইল বা পাসওয়ার্ড!";
+                loginError.classList.remove("hidden");
+            } finally {
+                loginBtn.innerText = "লগইন করুন";
+                loginBtn.disabled = false;
+            }
+        };
+
+        window.logoutAdmin = async () => {
+            try {
+                await signOut(auth);
+                showToast("লগআউট করা হয়েছে");
+            } catch (error) {
+                console.error("Logout Error:", error);
+                showToast("লগআউট করতে সমস্যা হয়েছে!");
+            }
+        };
 
         window.showToast = (msg) => {
             const toast = document.getElementById("toast");
@@ -211,7 +322,6 @@
         window.checkFoodCategory = () => {
             const cat = document.getElementById("pCategory").value;
             const foodDiv = document.getElementById("foodPricesDiv");
-
             if (cat === "Food") {
                 foodDiv.classList.remove("hidden");
             } else {
@@ -488,13 +598,6 @@
                 }
             }
         };
-
-        window.logoutAdmin = () => {
-            localStorage.removeItem("isAdminLoggedIn");
-            window.location.href = "admin-login.html";
-        };
-
-        loadAdminProducts();
     </script>
 </body>
 </html>
