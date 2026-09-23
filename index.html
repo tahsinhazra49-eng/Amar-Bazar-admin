@@ -1313,19 +1313,16 @@ function renderOrderFilterTabs() {
 $("#orderFilterTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-of]"); if (!b) return; orderFilter = b.dataset.of; orderPage = 1; renderOrderFilterTabs(); renderOrdersTable(); });
 $("#orderSearch").addEventListener("input", () => { orderPage = 1; renderOrdersTable(); });
 
-function getOrderSize(o) {
-  // বিভিন্ন সোর্স/পুরনো অর্ডার ডকুমেন্টে সাইজ/মাপ আলাদা ফিল্ড-নামে সেভ থাকতে পারে —
-  // যেটাতেই ডেটা পাওয়া যায় সেটা দেখানো হবে।
-  return o.selectedSize || o.size || o.productSize || o.variant || o.selectedVariant
-      || o.variantLabel || o.sizeLabel || o.measurement || o.orderSize || "";
-}
 function orderDetailRows(o) {
-  const size = getOrderSize(o);
   const rows = [
     ["কাস্টমার", o.customerName || "—"], ["মোবাইল", o.customerPhone || "—"],
     ["ঠিকানা", o.customerAddress || "—"],
-    ...(size ? [["সাইজ/মাপ", size]] : []),
-    ["বিস্তারিত", o.customDetails || "—"],
+    ["ডেলিভারি এলাকা", o.deliveryArea || "—"],
+    ["অর্ডার ডিটেলস", o.customDetails || "—"],
+    ["ক্যাটাগরি", o.category || "—"],
+    ["পরিমাণ", o.quantity != null ? `${o.quantity} পিস` : "—"],
+    ["প্রতি পিস দাম", o.unitPrice != null ? `৳${fmt(o.unitPrice)}` : "—"],
+    ["ডেলিভারি চার্জ", o.deliveryFee != null ? `৳${fmt(o.deliveryFee)}` : "—"],
     ["মোট মূল্য", `৳${fmt(o.totalAmount)}`], ["স্ট্যাটাস", STATUS_LABEL[o.status] || "পেন্ডিং"],
     ["সময়", o.timestamp ? new Date(o.timestamp.seconds*1000).toLocaleString("bn-BD") : "—"],
   ];
@@ -1341,12 +1338,17 @@ function renderOrdersTable() {
   orderPage = page;
 
   $("#ordersTable").innerHTML = `
-    <thead><tr><th>প্রোডাক্ট</th><th>কাস্টমার</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead>
+    <thead><tr><th>প্রোডাক্ট</th><th>কাস্টমার ও ডেলিভারি ডিটেলস</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead>
     <tbody>${
     items.length ? items.map((o) => `
       <tr>
-        <td><div class="cell-product">${productThumbHtml(getOrderImage(o))}<div><span class="row-name">${esc(o.productName || "—")}</span>${getOrderSize(o) ? `<div class="row-sub">সাইজ: ${esc(getOrderSize(o))}</div>` : ""}</div></div></td>
-        <td>${esc(o.customerName || "")}<div class="row-sub">${esc(o.customerPhone || "")}</div></td>
+        <td><div class="cell-product">${productThumbHtml(getOrderImage(o))}<div><span class="row-name">${esc(o.productName || "—")}</span>${o.customDetails ? `<div class="row-sub" style="white-space:normal">${esc(o.customDetails)}</div>` : ""}</div></div></td>
+        <td style="min-width:220px">
+          <div class="row-name">${esc(o.customerName || "")}</div>
+          <div class="row-sub">${esc(o.customerPhone || "")}</div>
+          <div class="row-sub" style="white-space:normal;max-width:240px;margin-top:2px">${esc(o.customerAddress || "")}</div>
+          ${o.deliveryArea ? `<span class="badge" style="margin-top:5px;background:${o.deliveryArea.includes("বাইরে")?"var(--purple-soft)":"var(--blue-soft)"};color:${o.deliveryArea.includes("বাইরে")?"var(--purple)":"var(--blue)"}">${esc(o.deliveryArea)}${o.deliveryFee!=null?` · ৳${fmt(o.deliveryFee)}`:""}</span>` : ""}
+        </td>
         <td>৳${fmt(o.totalAmount)}</td>
         <td>
           <select class="select-status" data-status="${o.id}">
