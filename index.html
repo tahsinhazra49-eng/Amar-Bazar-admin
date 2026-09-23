@@ -606,16 +606,45 @@ const CATEGORIES = [
   { key: "Food",        label: "ডাইরেক্ট ফুড",       emoji: "🍛" },
 ];
 const CAT_HINT = {
-  Grocery: "চাল/ডাল/তেল ইত্যাদির জন্য কেজি-গ্রাম, আর তরল পণ্যের জন্য লিটার — একই পণ্যের একাধিক মাপ ও দাম যোগ করতে পারবেন।",
-  Cosmetics: "পোশাকের জন্য Free Size/S/M/L/XL, প্যান্টের জন্য কোমরের মাপ, জুতার জন্য জুতার মাপ বাছাই করুন। প্লেইন কসমেটিক্স আইটেমে সাইজ লাগবে না।",
+  Grocery: "চাল/ডাল/আটা কেজি-গ্রামে, তেল/দুধ লিটার-মিলিতে, ডিম হালি-ডজনে — মাপের ধরন বাছলে সেই অনুযায়ী মাপ আসবে। প্রতি এককের দাম দিয়ে একবারে সব মাপের দাম বানাতে পারবেন।",
+  Cosmetics: "জামা, প্যান্ট (কোমরের মাপ), জুতা (পায়ের মাপ), পাঞ্জাবি, বোরকা, বাচ্চাদের পোশাক, চুড়ি, চাদর ও থান কাপড় (গজ/হাত) — ধরন বাছলে সঠিক মাপ আসবে।",
   Electronics: "ব্র্যান্ড, মডেল, ওয়ারেন্টি ও কালার অপশন দিন — গ্রাহক অর্ডারের সময় এগুলো দেখতে পাবে।",
-  Food: "বিরিয়ানির মতো খাবারের জন্য ফুল/হাফ প্লেট দাম দিন, গ্রিল/কাবাবের মতো আইটেমের জন্য শুধু পিস দাম দিন। যেকোনো একটি বা একাধিক পূরণ করুন।",
+  Food: "খাবারের ধরন বাছুন (বিরিয়ানি, গ্রিল, চাইনিজ, ফাস্টফুড, পিৎজা, মিষ্টি...) — সেই ধরনের প্রচলিত পরিমাণ (হাফ/ফুল, কোয়ার্টার, পিস, কেজি, ইঞ্চি) থেকে বেছে দাম দিন।",
 };
 const badgeClass = { Grocery:"b-grocery", Cosmetics:"b-cosmetics", Electronics:"b-electronics", Food:"b-food" };
-const GROCERY_PRESETS = ["৫০ গ্রাম","১০০ গ্রাম","২৫০ গ্রাম","৫০০ গ্রাম (আধা কেজি)","১ কেজি","১ লিটার"];
-const CLOTHING_SIZES = ["Free Size","S","M","L","XL","XXL","3XL"];
-const PANTS_SIZES = ["28","30","32","34","36","38","40","42","44"];
-const SHOE_SIZES = ["38","39","40","41","42","43","44","45"];
+const GROCERY_UNITS = {
+  "কেজি/গ্রাম": { base: "কেজি", note: "চাল, ডাল, আটা, চিনি, মসলা", steps: [["১০০ গ্রাম",.1],["২৫০ গ্রাম (পোয়া)",.25],["৫০০ গ্রাম (আধা কেজি)",.5],["১ কেজি",1],["২ কেজি",2],["৫ কেজি",5],["১০ কেজি",10],["২৫ কেজি (বস্তা)",25]] },
+  "লিটার/মিলি": { base: "লিটার", note: "তেল, দুধ, ঘি, সিরকা", steps: [["১০০ মিলি",.1],["২৫০ মিলি",.25],["৫০০ মিলি (আধা লিটার)",.5],["১ লিটার",1],["২ লিটার",2],["৫ লিটার",5]] },
+  "হালি/ডজন": { base: "পিস", note: "ডিম, কলা, লেবু", steps: [["১ পিস",1],["১ হালি (৪ পিস)",4],["আধা ডজন (৬ পিস)",6],["১ ডজন (১২ পিস)",12],["১ ক্রেট (৩০ পিস)",30]] },
+  "পিস/প্যাকেট": { base: "প্যাকেট", note: "নুডলস, সাবান, বিস্কুট", steps: [["১ প্যাকেট",1],["২ প্যাকেট",2],["৫ প্যাকেট",5],["১০ প্যাকেট",10],["১ কার্টন (২৪ প্যাকেট)",24]] },
+};
+const FOOD_TYPES = {
+  "ভাত, বিরিয়ানি, পোলাও, তেহারি": ["হাফ প্লেট","ফুল প্লেট","স্পেশাল প্লেট","আধা কেজি","১ কেজি","২ কেজি"],
+  "গ্রিল, রোস্ট, বার্বিকিউ": ["১ পিস","কোয়ার্টার (¼)","হাফ (½)","ফুল (১টি আস্ত)","২ পিস","১ কেজি"],
+  "ফ্রাইড চিকেন, কাবাব, নাগেটস": ["১ পিস","২ পিস","৪ পিস","৬ পিস","১২ পিস","বাকেট (২০ পিস)"],
+  "চাইনিজ (চাউমিন, ফ্রাইড রাইস, সুপ)": ["হাফ প্লেট","ফুল প্লেট","ছোট বাটি","বড় বাটি","ফ্যামিলি প্যাক"],
+  "ফাস্টফুড (বার্গার, শাওয়ার্মা, সান্ডউইচ)": ["১ পিস","ডাবল","স্পেশাল","কম্বো (ফ্রাই + ড্রিংক)"],
+  "পিৎজা": ["৬ ইঞ্চি (ছোট)","৮ ইঞ্চি (মিডিয়াম)","১০ ইঞ্চি (লার্জ)","১২ ইঞ্চি (এক্সট্রা লার্জ)"],
+  "নাস্তা (সিঙ্গারা, সমুচা, পুরি, ফুচকা, চটপটি)": ["১ পিস","৪ পিস","১ ডজন","হাফ প্লেট","ফুল প্লেট"],
+  "পানীয় (জুস, লাচ্ছি, শেক, চা-কফি)": ["১ কাপ","ছোট গ্লাস","বড় গ্লাস","৫০০ মিলি বোতল","১ লিটার"],
+  "মিষ্টি, বেকারি, পিঠা": ["১ পিস","আধা ডজন","১ ডজন","আধা কেজি","১ কেজি","১ বক্স"],
+  "কেক": ["১ পাউন্ড","২ পাউন্ড","৩ পাউন্ড","৫ পাউন্ড"],
+  "তরকারি, ভর্তা, ভাজি": ["১ পিস","ছোট বাটি","বড় বাটি","১ প্লেট ভাত","ভাত + তরকারি"],
+};
+const SIZE_TYPES = {
+  clothing: { name: "শার্ট, টি-শার্ট, পোশাক (S, M, L, XL)", title: "সাইজ", list: ["Free Size","S","M","L","XL","XXL","3XL"] },
+  pants: { name: "প্যান্ট, জিন্স, ট্রাউজার (কোমরের মাপ)", title: "প্যান্টের কোমরের মাপ (ইঞ্চি)", list: ["26","28","30","32","34","36","38","40","42","44","46"] },
+  shoes: { name: "জুতা, স্যান্ডেল, চপ্পল (পায়ের মাপ ৩৬-৪৬)", title: "জুতা/স্যান্ডেলের মাপ", list: ["36","37","38","39","40","41","42","43","44","45","46"] },
+  shoesNo: { name: "জুতা, স্যান্ডেল (নম্বর ৫-১১)", title: "জুতার নম্বর", list: ["5","6","7","8","9","10","11"] },
+  panjabi: { name: "পাঞ্জাবি, ফতুয়া (ইঞ্চি)", title: "পাঞ্জাবি/ফতুয়ার মাপ (ইঞ্চি)", list: ["36","38","40","42","44","46"] },
+  burka: { name: "বোরকা, আবায়া (লম্বা, ইঞ্চি)", title: "বোরকার লম্বা (ইঞ্চি)", list: ["50","52","54","56","58","60"] },
+  kids: { name: "বাচ্চাদের পোশাক (বয়স)", title: "বাচ্চার বয়স", list: ["০-৬ মাস","৬-১২ মাস","১-২ বছর","২-৩ বছর","৩-৪ বছর","৪-৫ বছর","৫-৬ বছর","৭-৮ বছর","৯-১০ বছর","১১-১২ বছর"] },
+  bangle: { name: "চুড়ি (ইঞ্চি)", title: "চুড়ির মাপ", list: ["2.2","2.4","2.6","2.8","2.10"] },
+  bed: { name: "চাদর, কম্বল, লেপ, বালিশ", title: "সাইজ", list: ["সিঙ্গেল","ডাবল","কুইন","কিং"] },
+  fabric: { name: "থান কাপড় / কাটপিস (গজ, হাত, মিটার হিসেবে বিক্রি)", title: "পরিমাণ", list: [] },
+  none: { name: "সাইজ লাগবে না (কসমেটিক্স, শাড়ি, ওড়না, গামছা...)", title: "", list: [] },
+};
+const SELL_UNITS = ["গজ","মিটার","হাত","থান","পিস"];
 const ORDER_STATUSES = ["Pending","Confirmed","Shipped","Delivered","Cancelled"];
 const STATUS_LABEL = { Pending:"পেন্ডিং", Confirmed:"কনফার্ম হয়েছে", Shipped:"পাঠানো হয়েছে", Delivered:"ডেলিভারি সম্পন্ন", Cancelled:"বাতিল" };
 const PAGE_SIZE = 8;
@@ -892,6 +921,7 @@ function renderCatPick() {
 $("#catPick").addEventListener("click", (e) => {
   const b = e.target.closest("[data-cat]"); if (!b) return;
   currentCategory = b.dataset.cat;
+  groceryVariants = [{ label: "", price: "" }];
   renderCatPick(); renderCategoryFields();
 });
 
@@ -900,42 +930,40 @@ function renderCategoryFields() {
   if (currentCategory === "Grocery") {
     box.innerHTML = `
       <label class="field"><span>মাপের ধরন *</span>
-        <select class="select" id="cGroceryUnit">
-          <option value="কেজি/গ্রাম">কেজি/গ্রাম (চাল, ডাল, আটা...)</option>
-          <option value="লিটার/মিলি">লিটার/মিলি (তেল, দুধ...)</option>
-          <option value="পিস/প্যাকেট">পিস/প্যাকেট (ডিম, সাবান...)</option>
-        </select>
+        <select class="select" id="cGroceryUnit">${Object.entries(GROCERY_UNITS).map(([k, u]) => `<option value="${k}">${k} (${u.note})</option>`).join("")}</select>
       </label>
+      <div class="two">
+        <label class="field" style="margin-top:0"><span id="rateLbl"></span><input class="input" type="number" min="0" id="cRate" placeholder="৳"></label>
+        <div style="display:flex;align-items:flex-end"><button type="button" class="btn btn-outline btn-sm" id="genVariantsBtn">দাম থেকে সব মাপ বানান</button></div>
+      </div>
       <label class="field"><span>বিভিন্ন মাপের দাম *</span></label>
       <div id="variantRows"></div>
       <div class="variant-presets" id="variantPresets"></div>
       <button type="button" class="btn btn-outline btn-sm" id="addVariantBtn">+ নতুন মাপ যোগ করুন</button>
-      <p class="hint">প্রথম সারিটাই প্রোডাক্ট কার্ডে দেখানো মূল দাম হিসেবে ব্যবহার হবে।</p>`;
-    $("#variantPresets").innerHTML = GROCERY_PRESETS.map((p) => `<button type="button" class="chip-btn" data-preset="${esc(p)}">+ ${esc(p)}</button>`).join("");
-    if (!groceryVariants.length) groceryVariants = [{ label: "", price: "" }];
-    renderVariantRows();
-    $("#addVariantBtn").addEventListener("click", () => { groceryVariants.push({ label: "", price: "" }); renderVariantRows(); });
-    $("#variantPresets").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-preset]"); if (!b) return;
-      const empty = groceryVariants.find((v) => !v.label && !v.price);
-      if (empty) empty.label = b.dataset.preset; else groceryVariants.push({ label: b.dataset.preset, price: "" });
+      <p class="hint">প্রথম সারিটাই প্রোডাক্ট কার্ডে মূল দাম হিসেবে দেখাবে। অপ্রয়োজনীয় মাপ ✕ চেপে মুছে দিন।</p>`;
+    const refresh = () => {
+      const u = GROCERY_UNITS[$("#cGroceryUnit").value];
+      $("#rateLbl").textContent = `প্রতি ${u.base} দাম (৳) — ঐচ্ছিক`;
+      setPresets(u.steps.map((s) => s[0]));
+    };
+    $("#cGroceryUnit").addEventListener("change", refresh); refresh();
+    $("#genVariantsBtn").addEventListener("click", () => {
+      const rate = Number($("#cRate").value);
+      if (!rate) { showToast("আগে প্রতি এককের দাম দিন"); return; }
+      groceryVariants = GROCERY_UNITS[$("#cGroceryUnit").value].steps.map(([label, f]) => ({ label, price: String(Math.round(rate * f)) }));
       renderVariantRows();
     });
+    wireVariantTools();
   } else if (currentCategory === "Cosmetics") {
     box.innerHTML = `
-      <label class="field"><span>মূল্য (৳) *</span>
+      <label class="field"><span id="cPriceLbl">মূল্য (৳) *</span>
         <input class="input" type="number" min="0" id="cPrice" required placeholder="৳">
       </label>
-      <label class="field"><span>সাইজের ধরন *</span>
-        <select class="select" id="cSizeType">
-          <option value="clothing">পোশাক (Free Size / S / M / L / XL)</option>
-          <option value="pants">প্যান্ট (কোমরের মাপ)</option>
-          <option value="shoes">জুতা (জুতার মাপ)</option>
-          <option value="none">সাইজ নেই (কসমেটিক্স আইটেম)</option>
-        </select>
+      <label class="field"><span>পণ্যের ধরন / সাইজের ধরন *</span>
+        <select class="select" id="cSizeType">${Object.entries(SIZE_TYPES).map(([k, t]) => `<option value="${k}">${t.name}</option>`).join("")}</select>
       </label>
       <div id="sizeOptionsBox"></div>`;
-    $("#cSizeType").addEventListener("change", renderSizeOptions);
+    $("#cSizeType").addEventListener("change", () => renderSizeOptions());
     renderSizeOptions();
   } else if (currentCategory === "Electronics") {
     box.innerHTML = `
@@ -960,19 +988,32 @@ function renderCategoryFields() {
       </div>`;
   } else if (currentCategory === "Food") {
     box.innerHTML = `
-      <div class="three">
-        <label class="field" style="margin-top:0"><span>ফুল প্লেট দাম</span>
-          <input class="input" type="number" min="0" id="cFull" placeholder="৳">
-        </label>
-        <label class="field" style="margin-top:0"><span>হাফ প্লেট দাম</span>
-          <input class="input" type="number" min="0" id="cHalf" placeholder="৳">
-        </label>
-        <label class="field" style="margin-top:0"><span>পিস দাম</span>
-          <input class="input" type="number" min="0" id="cPiece" placeholder="৳">
-        </label>
-      </div>
-      <p class="hint">অন্তত একটি দাম দিতে হবে — যেমন বিরিয়ানির জন্য ফুল/হাফ, গ্রিলের জন্য শুধু পিস।</p>`;
+      <label class="field"><span>খাবারের ধরন *</span>
+        <select class="select" id="cFoodType">${Object.keys(FOOD_TYPES).map((k) => `<option value="${k}">${k}</option>`).join("")}</select>
+      </label>
+      <label class="field"><span>পরিবেশন / পরিমাণ ও দাম * (যেগুলো বিক্রি হয় শুধু সেগুলোই দিন)</span></label>
+      <div id="variantRows"></div>
+      <div class="variant-presets" id="variantPresets"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="addVariantBtn">+ নতুন পরিমাণ যোগ করুন</button>
+      <p class="hint">যেমন: বিরিয়ানি — হাফ/ফুল প্লেট; গ্রিল — কোয়ার্টার/হাফ/ফুল; পিৎজা — ইঞ্চি; মিষ্টি — কেজি/ডজন। প্রথম সারির দামটি কার্ডে দেখাবে।</p>`;
+    const refresh = () => setPresets(FOOD_TYPES[$("#cFoodType").value]);
+    $("#cFoodType").addEventListener("change", refresh); refresh();
+    wireVariantTools();
   }
+}
+function setPresets(list) {
+  $("#variantPresets").innerHTML = list.map((p) => `<button type="button" class="chip-btn" data-preset="${esc(p)}">+ ${esc(p)}</button>`).join("");
+}
+function wireVariantTools() {
+  if (!groceryVariants.length) groceryVariants = [{ label: "", price: "" }];
+  renderVariantRows();
+  $("#addVariantBtn").addEventListener("click", () => { groceryVariants.push({ label: "", price: "" }); renderVariantRows(); });
+  $("#variantPresets").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-preset]"); if (!b) return;
+    const empty = groceryVariants.find((v) => !v.label && !v.price);
+    if (empty) empty.label = b.dataset.preset; else groceryVariants.push({ label: b.dataset.preset, price: "" });
+    renderVariantRows();
+  });
 }
 function renderVariantRows() {
   $("#variantRows").innerHTML = groceryVariants.map((v, i) => `
@@ -991,14 +1032,26 @@ function renderVariantRows() {
   }));
 }
 function renderSizeOptions(selected) {
-  const type = $("#cSizeType").value;
-  const box = $("#sizeOptionsBox");
-  const list = type === "clothing" ? CLOTHING_SIZES : type === "pants" ? PANTS_SIZES : type === "shoes" ? SHOE_SIZES : [];
-  if (!list.length) { box.innerHTML = `<p class="hint">এই আইটেমে গ্রাহককে সাইজ বাছাই করতে হবে না।</p>`; return; }
-  const sel = new Set(selected || list);
-  box.innerHTML = `<label class="field"><span>কোন কোন সাইজ পাওয়া যাচ্ছে (টিক দিন)</span>
-    <div class="pill-check">${list.map((s) => `<label><input type="checkbox" value="${esc(s)}" ${sel.has(s)?"checked":""}> ${esc(s)}</label>`).join("")}</div>
-  </label>`;
+  const type = $("#cSizeType").value, T = SIZE_TYPES[type] || SIZE_TYPES.none, box = $("#sizeOptionsBox");
+  $("#cPriceLbl").textContent = type === "fabric" ? "প্রতি এককের মূল্য (৳) *" : "মূল্য (৳) *";
+  if (type === "fabric") {
+    box.innerHTML = `<label class="field"><span>কোন এককে বিক্রি হয়</span><select class="select" id="cSellUnit">${SELL_UNITS.map((u) => `<option>${u}</option>`).join("")}</select></label>
+      <p class="hint">গ্রাহক অর্ডারের সময় কত গজ/হাত/মিটার লাগবে সেই সংখ্যা দেবে; মোট দাম = প্রতি এককের দাম × সংখ্যা।</p>`;
+    return;
+  }
+  if (!T.list.length) { box.innerHTML = `<p class="hint">এই আইটেমে গ্রাহককে সাইজ বাছাই করতে হবে না।</p>`; return; }
+  const chosen = Array.isArray(selected) ? selected : null;
+  const list = [...new Set([...T.list, ...(chosen || [])])];
+  const sel = new Set(chosen || T.list);
+  box.innerHTML = `<label class="field"><span>কোন কোন মাপ পাওয়া যাচ্ছে (টিক দিন)</span>
+    <div class="pill-check" id="sizePills">${list.map((s) => `<label><input type="checkbox" value="${esc(s)}" ${sel.has(s) ? "checked" : ""}> ${esc(s)}</label>`).join("")}</div>
+  </label>
+  <div style="display:flex;gap:8px;margin-top:10px"><input class="input" id="customSize" placeholder="নিজের মাপ যোগ করুন"><button type="button" class="btn btn-outline btn-sm" id="addSizeBtn">+ যোগ</button></div>`;
+  $("#addSizeBtn").addEventListener("click", () => {
+    const v = $("#customSize").value.trim(); if (!v) return;
+    $("#sizePills").insertAdjacentHTML("beforeend", `<label><input type="checkbox" value="${esc(v)}" checked> ${esc(v)}</label>`);
+    $("#customSize").value = "";
+  });
 }
 
 /* ==========================================================================
@@ -1031,6 +1084,7 @@ $("#productForm").addEventListener("submit", async (e) => {
     badge: $("#pBadge").value,
     inStock: $("#pInStock").checked,
     featured: $("#pFeatured").checked,
+    foodVariants: null, foodType: null, sellUnit: null, sizeLabel: null,
   };
 
   try {
@@ -1045,8 +1099,10 @@ $("#productForm").addEventListener("submit", async (e) => {
       const price = Number($("#cPrice").value);
       if (!price) { showToast("মূল্য দিন"); btn.innerHTML = label; btn.disabled = false; return; }
       const sizeType = $("#cSizeType").value;
-      const sizeOptions = $$("#sizeOptionsBox input:checked").map((i) => i.value);
+      const sizeOptions = sizeType === "fabric" ? [] : $$("#sizeOptionsBox input:checked").map((i) => i.value);
       base.price = price; base.sizeType = sizeType; base.sizeOptions = sizeOptions;
+      base.sizeLabel = SIZE_TYPES[sizeType].title || null;
+      base.sellUnit = sizeType === "fabric" ? $("#cSellUnit").value : null;
       base.groceryUnit = null; base.groceryVariants = null; base.foodPrices = null; base.brand = null; base.model = null; base.warranty = null; base.colors = null;
     } else if (currentCategory === "Electronics") {
       const price = Number($("#cPrice").value);
@@ -1058,10 +1114,10 @@ $("#productForm").addEventListener("submit", async (e) => {
       base.colors = $("#cColors").value.split(",").map((c) => c.trim()).filter(Boolean);
       base.groceryUnit = null; base.groceryVariants = null; base.foodPrices = null; base.sizeType = null; base.sizeOptions = null;
     } else if (currentCategory === "Food") {
-      const full = Number($("#cFull").value) || 0, half = Number($("#cHalf").value) || 0, piece = Number($("#cPiece").value) || 0;
-      if (!full && !half && !piece) { showToast("অন্তত একটি দাম দিন (ফুল/হাফ/পিস)"); btn.innerHTML = label; btn.disabled = false; return; }
-      base.foodPrices = { full, half, piece };
-      base.price = full || half || piece;
+      const variants = groceryVariants.map((v) => ({ label: v.label.trim(), price: Number(v.price) || 0 })).filter((v) => v.label && v.price > 0);
+      if (!variants.length) { showToast("অন্তত একটি পরিমাণ ও দাম দিন"); btn.innerHTML = label; btn.disabled = false; return; }
+      base.foodType = $("#cFoodType").value; base.foodVariants = variants; base.foodPrices = null;
+      base.price = variants[0].price;
       base.groceryUnit = null; base.groceryVariants = null; base.sizeType = null; base.sizeOptions = null; base.brand = null; base.model = null; base.warranty = null; base.colors = null;
     }
 
@@ -1096,11 +1152,12 @@ function loadProductIntoForm(p) {
   if (p.category === "Grocery") {
     groceryVariants = (p.groceryVariants && p.groceryVariants.length) ? p.groceryVariants.map((v) => ({ ...v })) : [{ label: "", price: "" }];
     renderVariantRows();
-    if (p.groceryUnit) $("#cGroceryUnit").value = p.groceryUnit;
+    if (GROCERY_UNITS[p.groceryUnit]) { $("#cGroceryUnit").value = p.groceryUnit; $("#cGroceryUnit").dispatchEvent(new Event("change")); }
   } else if (p.category === "Cosmetics") {
     $("#cPrice").value = p.price || "";
     $("#cSizeType").value = p.sizeType || "clothing";
     renderSizeOptions(p.sizeOptions);
+    if ($("#cSellUnit") && p.sellUnit) $("#cSellUnit").value = p.sellUnit;
   } else if (p.category === "Electronics") {
     $("#cPrice").value = p.price || "";
     $("#cBrand").value = p.brand || "";
@@ -1108,10 +1165,13 @@ function loadProductIntoForm(p) {
     $("#cWarranty").value = p.warranty || "";
     $("#cColors").value = (p.colors || []).join(", ");
   } else if (p.category === "Food") {
+    const ft = $("#cFoodType");
+    if (FOOD_TYPES[p.foodType]) { ft.value = p.foodType; ft.dispatchEvent(new Event("change")); }
     const fp = p.foodPrices || {};
-    $("#cFull").value = fp.full || "";
-    $("#cHalf").value = fp.half || "";
-    $("#cPiece").value = fp.piece || "";
+    groceryVariants = (p.foodVariants && p.foodVariants.length) ? p.foodVariants.map((v) => ({ ...v }))
+      : [["ফুল প্লেট", fp.full], ["হাফ প্লেট", fp.half], ["পিস", fp.piece]].filter((x) => x[1]).map((x) => ({ label: x[0], price: x[1] }));
+    if (!groceryVariants.length) groceryVariants = [{ label: "", price: "" }];
+    renderVariantRows();
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1132,6 +1192,7 @@ $("#productSearch").addEventListener("input", () => { productPage = 1; renderPro
 $("#productStatusFilter").addEventListener("change", () => { productPage = 1; renderProductsTable(); });
 
 function priceLabel(p) {
+  if (p.category === "Food" && p.foodVariants?.length) return p.foodVariants.map((v) => `${v.label} ৳${fmt(v.price)}`).join(" · ");
   if (p.category === "Food" && p.foodPrices) {
     const fp = p.foodPrices;
     const parts = [];
@@ -1152,6 +1213,8 @@ function productDetailRows(p) {
     ["ব্যাজ", p.badge || "—"], ["কোয়ালিটি ট্যাগ", p.quality || "—"],
     ["ফিচার্ড", p.featured ? "হ্যাঁ" : "না"],
   ];
+  if (p.sizeOptions?.length) rows.push([p.sizeLabel || "সাইজ", p.sizeOptions.join(", ")]);
+  if (p.sellUnit) rows.push(["বিক্রির একক", "প্রতি " + p.sellUnit]);
   if (p.brand) rows.push(["ব্র্যান্ড", p.brand]);
   if (p.model) rows.push(["মডেল", p.model]);
   if (p.warranty) rows.push(["ওয়ারেন্টি", p.warranty]);
