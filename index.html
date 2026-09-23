@@ -261,6 +261,54 @@ select.select-status{border-radius:999px;font-size:12px;font-weight:700;padding:
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .spin{width:15px;height:15px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* ======================================================================
+   মোবাইল ভিউ — ডেস্কটপের মতো পরিপাটি লেআউট
+   ====================================================================== */
+@media (max-width:880px){
+  .content{padding:16px 14px 50px}
+  .topbar{padding:12px 14px}
+}
+@media (max-width:640px){
+  .content{padding:14px 12px 46px}
+  .page-head{margin-bottom:16px}
+  .page-head h2{font-size:18px}
+  .page-head p{font-size:12px}
+  .page-head .btn{flex:1 1 auto}
+  .stats{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .stat{padding:14px 14px;border-radius:12px}
+  .stat .ic{width:36px;height:36px;font-size:16px;border-radius:9px}
+  .stat .val{font-size:19px}
+  .stat .lbl{font-size:11px}
+  .stat .sub{font-size:10.5px}
+  .quick-grid{grid-template-columns:repeat(3,1fr);gap:8px}
+  .quick-btn{padding:14px 6px;font-size:11px}
+  .quick-btn .qi{width:34px;height:34px;font-size:16px}
+  .panel{padding:14px;border-radius:12px;margin-bottom:14px}
+  .panel-head{margin-bottom:12px}
+  .panel-head h3{font-size:14.5px}
+  .filter-row{gap:8px}
+  .filter-search{min-width:100%;max-width:none;flex:1 1 100%}
+  .filter-row .select{flex:1 1 auto;min-width:0}
+  table{font-size:12px}
+  th,td{padding:9px 8px}
+  .p-thumb,.p-thumb-wrap{width:36px;height:36px}
+  .act-btn{width:28px;height:28px}
+  .row-name{font-size:12.5px}
+  .row-sub{font-size:10.5px}
+  .badge,.status-pill{font-size:10px;padding:3px 7px}
+  select.select-status{font-size:11px;padding:5px 22px 5px 10px}
+  .modal-box{padding:16px;border-radius:14px;max-height:92vh}
+  .m-row{font-size:12.5px}
+  .variant-row{grid-template-columns:1fr 90px 32px}
+  .pagination{gap:4px}
+  .pg-info{width:100%;order:-1;margin-bottom:6px}
+  .login-card{padding:28px 20px}
+}
+@media (max-width:400px){
+  .stats{grid-template-columns:1fr}
+  .quick-grid{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
@@ -1265,10 +1313,19 @@ function renderOrderFilterTabs() {
 $("#orderFilterTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-of]"); if (!b) return; orderFilter = b.dataset.of; orderPage = 1; renderOrderFilterTabs(); renderOrdersTable(); });
 $("#orderSearch").addEventListener("input", () => { orderPage = 1; renderOrdersTable(); });
 
+function getOrderSize(o) {
+  // বিভিন্ন সোর্স/পুরনো অর্ডার ডকুমেন্টে সাইজ/মাপ আলাদা ফিল্ড-নামে সেভ থাকতে পারে —
+  // যেটাতেই ডেটা পাওয়া যায় সেটা দেখানো হবে।
+  return o.selectedSize || o.size || o.productSize || o.variant || o.selectedVariant
+      || o.variantLabel || o.sizeLabel || o.measurement || o.orderSize || "";
+}
 function orderDetailRows(o) {
+  const size = getOrderSize(o);
   const rows = [
     ["কাস্টমার", o.customerName || "—"], ["মোবাইল", o.customerPhone || "—"],
-    ["ঠিকানা", o.customerAddress || "—"], ["বিস্তারিত", o.customDetails || "—"],
+    ["ঠিকানা", o.customerAddress || "—"],
+    ...(size ? [["সাইজ/মাপ", size]] : []),
+    ["বিস্তারিত", o.customDetails || "—"],
     ["মোট মূল্য", `৳${fmt(o.totalAmount)}`], ["স্ট্যাটাস", STATUS_LABEL[o.status] || "পেন্ডিং"],
     ["সময়", o.timestamp ? new Date(o.timestamp.seconds*1000).toLocaleString("bn-BD") : "—"],
   ];
@@ -1288,7 +1345,7 @@ function renderOrdersTable() {
     <tbody>${
     items.length ? items.map((o) => `
       <tr>
-        <td><div class="cell-product">${productThumbHtml(getOrderImage(o))}<div><span class="row-name">${esc(o.productName || "—")}</span></div></div></td>
+        <td><div class="cell-product">${productThumbHtml(getOrderImage(o))}<div><span class="row-name">${esc(o.productName || "—")}</span>${getOrderSize(o) ? `<div class="row-sub">সাইজ: ${esc(getOrderSize(o))}</div>` : ""}</div></div></td>
         <td>${esc(o.customerName || "")}<div class="row-sub">${esc(o.customerPhone || "")}</div></td>
         <td>৳${fmt(o.totalAmount)}</td>
         <td>
