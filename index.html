@@ -508,7 +508,7 @@ select.select-status{border-radius:999px;font-size:12px;font-weight:700;padding:
           <div class="catlink-utm">
             <input class="input" id="clSource" placeholder="utm_source (যেমন facebook)">
             <input class="input" id="clMedium" placeholder="utm_medium (যেমন cpc)">
-            <input class="input" id="clCampaign" placeholder="utm_campaign (যেমন eid-sale)">
+            <input class="input" id="clCampaign" placeholder="utm_campaign (খালি রাখলে ক্যাটাগরির নাম)">
           </div>
           <div id="catLinksList" style="margin-top:8px"></div>
         </div>
@@ -1219,6 +1219,8 @@ $("#productFilterTabs").addEventListener("click", (e) => { const b = e.target.cl
    ========================================================================== */
 const clSlugify = (s) => String(s ?? "").normalize("NFKC").trim().toLowerCase()
   .replace(/[^\p{L}\p{N}\p{M}]+/gu, "-").replace(/^-+|-+$/g, "");
+// শপের ডিফল্ট ঠিকানা (নিচের ঘরে বদলানো যায়; ব্রাউজারে সেভ থাকে)। নিজের ডোমেইন দিন।
+const DEFAULT_SHOP_URL = "https://amarbazar.app/";
 const clGet = (k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
 const clSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
@@ -1229,21 +1231,23 @@ function buildCategoryLinkItems() {
   const extra = [...counts.keys()].filter((k) => !known.has(k)).sort().map((k) => ({ key: k, label: k, emoji: "🏷️" }));
   const used = new Set();
   return [...CATEGORIES, ...extra].map((c) => {
-    const base = clSlugify(c.key) || "category"; let slug = base, n = 2;
+    const base = clSlugify(c.slug || c.key) || "category"; let slug = base, n = 2;
     while (used.has(slug)) slug = base + "-" + n++;
     used.add(slug);
     return { ...c, slug, count: counts.get(c.key) || 0 };
   });
 }
 function categoryLinkFor(c) {
-  let base = $("#clShopUrl").value.trim();
-  if (!base) base = location.origin + location.pathname.replace(/[^/]*$/, "");
+  let base = $("#clShopUrl").value.trim() || DEFAULT_SHOP_URL;
+  if (!base && /^https?:$/.test(location.protocol)) base = location.origin + location.pathname.replace(/[^/]*$/, "");
   if (!/^https?:\/\//i.test(base)) base = "https://" + base;
   base = base.replace(/[?#].*$/, "").replace(/index\.html$/i, "").replace(/\/?$/, "/");
   const q = new URLSearchParams();
   [["utm_source", "#clSource"], ["utm_medium", "#clMedium"], ["utm_campaign", "#clCampaign"]].forEach(([k, id]) => {
     const v = $(id).value.trim(); if (v) q.set(k, v);
   });
+  // utm_campaign খালি রাখলে (আর source/medium দিলে) প্রতিটি ক্যাটাগরির লিংকে ক্যাটাগরির নামই campaign হয়, যেমন three_piece
+  if (!q.has("utm_campaign") && (q.has("utm_source") || q.has("utm_medium"))) q.set("utm_campaign", c.slug.replace(/-/g, "_"));
   const qs = q.toString();
   return `${base}category/${encodeURIComponent(c.slug)}${qs ? "?" + qs : ""}`;
 }
@@ -1253,10 +1257,10 @@ function renderCategoryLinks() {
   $("#catLinksList").innerHTML = catLinkItems.map((c, i) => `
     <div class="catlink-row">
       <div class="meta"><b>${esc(c.emoji || "")} ${esc(c.label)}</b><small>${fmt(c.count)}টি প্রোডাক্ট</small><code>${esc(categoryLinkFor(c))}</code></div>
-      <button type="button" class="btn btn-dark btn-sm" data-cl="${i}">লিংক কপি</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-dark btn-sm" data-cl="${i}">ক্যাটাগরি লিংক কপি</button><a class="btn btn-outline btn-sm" href="${esc(categoryLinkFor(c))}" target="_blank" rel="noopener">খুলে দেখুন</a></div>
     </div>`).join("") || `<p class="hint">কোনো ক্যাটাগরি পাওয়া যায়নি।</p>`;
 }
-$("#clShopUrl").value = clGet("clShopUrl");
+$("#clShopUrl").value = clGet("clShopUrl") || DEFAULT_SHOP_URL;
 ["#clSource", "#clMedium", "#clCampaign"].forEach((id) => { $(id).value = clGet(id); });
 ["#clShopUrl", "#clSource", "#clMedium", "#clCampaign"].forEach((id) => $(id).addEventListener("input", () => { clSet(id === "#clShopUrl" ? "clShopUrl" : id, $(id).value.trim()); renderCategoryLinks(); }));
 $("#catLinksList").addEventListener("click", async (e) => {
