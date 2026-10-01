@@ -590,7 +590,12 @@ window.showToast = (msg) => {
 /* ---------- ছোট আইকন লাইব্রেরি (row action বাটনের জন্য) ---------- */
 /* ফেসবুক অ্যাডের লিংকে যে ডোমেইন বসবে — নিজের আসল ডোমেইন দিন (শেষে / দেবেন না) */
 const SITE_URL = "https://kp-amar-bazar.vercel.app";
-const adLink = (id) => `${SITE_URL}/?p=${encodeURIComponent(id)}&utm_source=facebook&utm_medium=paid_social`;
+// ছোট লিংক: আইডির প্রথম ৮ অক্ষর (অন্য কোনো প্রোডাক্টের আইডির সাথে মিলে গেলে স্বয়ংক্রিয়ভাবে লম্বা হবে)
+const adLink = (id) => {
+  let n = 8;
+  while (n < id.length && allProducts.some((x) => x.id !== id && x.id.startsWith(id.slice(0, n)))) n++;
+  return `${SITE_URL}/?p=${id.slice(0, n)}`;
+};
 async function copyText(t) {
   try { await navigator.clipboard.writeText(t); return true; } catch {}
   try {
