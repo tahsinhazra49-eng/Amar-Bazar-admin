@@ -174,16 +174,6 @@ ul{padding:0;list-style:none}
 .cat-chip{border:1.5px solid var(--line);border-radius:11px;padding:12px 16px;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px}
 .cat-chip.on{border-color:var(--ink);background:var(--ink);color:#fff}
 
-/* ---------- category links (Facebook ad links) ---------- */
-.catlink-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
-.catlink-row:last-child{border-bottom:0}
-.catlink-row .meta{flex:1;min-width:0}
-.catlink-row b{display:block;font-size:14.5px}
-.catlink-row small{color:var(--muted);font-size:12px}
-.catlink-row code{display:block;font-size:12px;color:var(--ink-2);word-break:break-all;margin-top:3px}
-.catlink-utm{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
-@media(max-width:640px){.catlink-utm{grid-template-columns:1fr}.catlink-row{flex-wrap:wrap}}
-
 /* ---------- checkbox pills ---------- */
 .pill-check{display:flex;flex-wrap:wrap;gap:8px}
 .pill-check label{border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer}
@@ -497,21 +487,6 @@ select.select-status{border-radius:999px;font-size:12px;font-weight:700;padding:
           <div class="tbl-wrap"><table id="productsTable"><tbody></tbody></table></div>
           <div class="pagination" id="productPagination"></div>
         </div>
-
-        <!-- ক্যাটাগরি লিংক (ফেসবুক অ্যাডের জন্য) -->
-        <div class="panel" id="catLinksPanel">
-          <div class="panel-head">
-            <div><h3>ক্যাটাগরি লিংক</h3><p>ফেসবুক অ্যাড, মেসেঞ্জার বা হোয়াটসঅ্যাপে পেস্ট করার জন্য। নতুন ক্যাটাগরি নিজে থেকেই তালিকায় আসবে।</p></div>
-          </div>
-          <label class="field" style="margin-top:0"><span>শপের ঠিকানা (যেখানে ইউজার প্যানেল আছে)</span></label>
-          <input class="input" id="clShopUrl" placeholder="https://myshop.com/">
-          <div class="catlink-utm">
-            <input class="input" id="clSource" placeholder="utm_source (যেমন facebook)">
-            <input class="input" id="clMedium" placeholder="utm_medium (যেমন cpc)">
-            <input class="input" id="clCampaign" placeholder="utm_campaign (খালি রাখলে ক্যাটাগরির নাম)">
-          </div>
-          <div id="catLinksList" style="margin-top:8px"></div>
-        </div>
       </section>
 
       <!-- ---------------- অর্ডার ম্যানেজমেন্ট ---------------- -->
@@ -613,6 +588,18 @@ window.showToast = (msg) => {
 };
 
 /* ---------- ছোট আইকন লাইব্রেরি (row action বাটনের জন্য) ---------- */
+/* ফেসবুক অ্যাডের লিংকে যে ডোমেইন বসবে — নিজের আসল ডোমেইন দিন (শেষে / দেবেন না) */
+const SITE_URL = "https://kp-amar-bazar.vercel.app";
+const adLink = (id) => `${SITE_URL}/?p=${encodeURIComponent(id)}&utm_source=facebook&utm_medium=paid_social`;
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand("copy"); ta.remove(); return ok;
+  } catch { return false; }
+}
 const ICON = {
   edit: `<svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
   eye: `<svg class="i" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>`,
@@ -791,7 +778,7 @@ async function loadAll() {
 async function loadProducts() {
   const snap = await getDocs(collection(db, "products"));
   allProducts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  renderProductsTable(); renderDashboard(); renderCategoryLinks();
+  renderProductsTable(); renderDashboard();
 }
 async function loadOffers() {
   const snap = await getDocs(collection(db, "offers"));
@@ -1213,66 +1200,6 @@ function renderProductFilterTabs() {
   $("#productFilterTabs").innerHTML = tabs.map((t) => `<button type="button" class="tab2 ${productFilter===t.key?"on":""}" data-pf="${t.key}">${t.label}</button>`).join("");
 }
 $("#productFilterTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-pf]"); if (!b) return; productFilter = b.dataset.pf; productPage = 1; renderProductFilterTabs(); renderProductsTable(); });
-/* ==========================================================================
-   ক্যাটাগরি লিংক — স্লাগের নিয়ম অবশ্যই index.html-এর সাথে হুবহু এক থাকতে হবে
-   (প্রথমে CATEGORIES এর ক্রম, তারপর ডেটাবেসে পাওয়া বাকি ক্যাটাগরি A→Z, একই নামের সংঘর্ষে -2, -3)
-   ========================================================================== */
-const clSlugify = (s) => String(s ?? "").normalize("NFKC").trim().toLowerCase()
-  .replace(/[^\p{L}\p{N}\p{M}]+/gu, "-").replace(/^-+|-+$/g, "");
-// শপের ডিফল্ট ঠিকানা (নিচের ঘরে বদলানো যায়; ব্রাউজারে সেভ থাকে)। নিজের ডোমেইন দিন।
-const DEFAULT_SHOP_URL = "https://amarbazar.app/";
-const clGet = (k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
-const clSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
-
-function buildCategoryLinkItems() {
-  const counts = new Map();
-  allProducts.forEach((p) => { if (typeof p.category === "string" && p.category.trim()) counts.set(p.category, (counts.get(p.category) || 0) + 1); });
-  const known = new Set(CATEGORIES.map((c) => c.key));
-  const extra = [...counts.keys()].filter((k) => !known.has(k)).sort().map((k) => ({ key: k, label: k, emoji: "🏷️" }));
-  const used = new Set();
-  return [...CATEGORIES, ...extra].map((c) => {
-    const base = clSlugify(c.slug || c.key) || "category"; let slug = base, n = 2;
-    while (used.has(slug)) slug = base + "-" + n++;
-    used.add(slug);
-    return { ...c, slug, count: counts.get(c.key) || 0 };
-  });
-}
-function categoryLinkFor(c) {
-  let base = $("#clShopUrl").value.trim() || DEFAULT_SHOP_URL;
-  if (!base && /^https?:$/.test(location.protocol)) base = location.origin + location.pathname.replace(/[^/]*$/, "");
-  if (!/^https?:\/\//i.test(base)) base = "https://" + base;
-  base = base.replace(/[?#].*$/, "").replace(/index\.html$/i, "").replace(/\/?$/, "/");
-  const q = new URLSearchParams();
-  [["utm_source", "#clSource"], ["utm_medium", "#clMedium"], ["utm_campaign", "#clCampaign"]].forEach(([k, id]) => {
-    const v = $(id).value.trim(); if (v) q.set(k, v);
-  });
-  // utm_campaign খালি রাখলে (আর source/medium দিলে) প্রতিটি ক্যাটাগরির লিংকে ক্যাটাগরির নামই campaign হয়, যেমন three_piece
-  if (!q.has("utm_campaign") && (q.has("utm_source") || q.has("utm_medium"))) q.set("utm_campaign", c.slug.replace(/-/g, "_"));
-  const qs = q.toString();
-  return `${base}category/${encodeURIComponent(c.slug)}${qs ? "?" + qs : ""}`;
-}
-let catLinkItems = [];
-function renderCategoryLinks() {
-  catLinkItems = buildCategoryLinkItems();
-  $("#catLinksList").innerHTML = catLinkItems.map((c, i) => `
-    <div class="catlink-row">
-      <div class="meta"><b>${esc(c.emoji || "")} ${esc(c.label)}</b><small>${fmt(c.count)}টি প্রোডাক্ট</small><code>${esc(categoryLinkFor(c))}</code></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-dark btn-sm" data-cl="${i}">ক্যাটাগরি লিংক কপি</button><a class="btn btn-outline btn-sm" href="${esc(categoryLinkFor(c))}" target="_blank" rel="noopener">খুলে দেখুন</a></div>
-    </div>`).join("") || `<p class="hint">কোনো ক্যাটাগরি পাওয়া যায়নি।</p>`;
-}
-$("#clShopUrl").value = clGet("clShopUrl") || DEFAULT_SHOP_URL;
-["#clSource", "#clMedium", "#clCampaign"].forEach((id) => { $(id).value = clGet(id); });
-["#clShopUrl", "#clSource", "#clMedium", "#clCampaign"].forEach((id) => $(id).addEventListener("input", () => { clSet(id === "#clShopUrl" ? "clShopUrl" : id, $(id).value.trim()); renderCategoryLinks(); }));
-$("#catLinksList").addEventListener("click", async (e) => {
-  const b = e.target.closest("[data-cl]"); if (!b) return;
-  const url = categoryLinkFor(catLinkItems[+b.dataset.cl]);
-  try { await navigator.clipboard.writeText(url); }
-  catch { const t = document.createElement("textarea"); t.value = url; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); } catch {} t.remove(); }
-  const old = b.textContent; b.textContent = "কপি হয়েছে ✓";
-  showToast("লিংক কপি হয়েছে");
-  setTimeout(() => { b.textContent = old; }, 1500);
-});
-
 $("#productSearch").addEventListener("input", () => { productPage = 1; renderProductsTable(); });
 $("#productStatusFilter").addEventListener("change", () => { productPage = 1; renderProductsTable(); });
 
@@ -1337,6 +1264,7 @@ function renderProductsTable() {
         <td>
           <div class="row-actions">
             <button class="act-btn" data-view="${p.id}" title="বিস্তারিত দেখুন">${ICON.eye}</button>
+            <button class="act-btn" data-copy="${p.id}" title="ফেসবুক অ্যাড লিংক কপি" style="font-size:15px">🔗</button>
             <button class="act-btn" data-edit="${p.id}" title="এডিট">${ICON.edit}</button>
             <button class="act-btn danger" data-del="${p.id}" title="মুছুন">${ICON.trash}</button>
           </div>
@@ -1371,6 +1299,14 @@ $("#productsTable").addEventListener("change", (e) => {
   updateProductBulkBar();
 });
 $("#productsTable").addEventListener("click", async (e) => {
+  const cp = e.target.closest("[data-copy]");
+  if (cp) {
+    const link = adLink(cp.dataset.copy);
+    const ok = await copyText(link);
+    if (ok) showToast("অ্যাড লিংক কপি হয়েছে ✓");
+    else prompt("লিংকটি কপি করুন:", link);
+    return;
+  }
   const view = e.target.closest("[data-view]");
   if (view) { const p = allProducts.find((x) => x.id === view.dataset.view); openModal(p.name, productDetailRows(p), p.imageUrl); return; }
   const edit = e.target.closest("[data-edit]"); if (edit) { setTab("products"); loadProductIntoForm(allProducts.find((p) => p.id === edit.dataset.edit)); return; }
